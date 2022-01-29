@@ -1,0 +1,17 @@
+version: '3.8'
+services:
+  server:
+    image: serpi90/scpsl
+    build:
+      context: https://github.com/serpi90/scpsl-docker.git
+    environment:
+      PORT: 7777
+      UID: 1000
+      GID: 1000
+    ports:
+      - '7777:7777/udp'
+    restart: unless-stopped
+    volumes:
+      - ./config:/config # Config directory
+      - ./game:/scp-server # Server files, caching this will avoid having to download the server each time
+      - ./steam:/home/steam/.steam/ # Steam files, caching this will improve startup time
