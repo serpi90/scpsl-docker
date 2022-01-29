@@ -1,47 +1,48 @@
-FROM steamcmd/steamcmd AS steambuild
-MAINTAINER Ryan Smith <fragsoc@yusu.org>
-MAINTAINER Laura Demkowicz-Duffy <fragsoc@yusu.org>
+FROM mono:6
 
-ARG APPID=996560
-ARG STEAM_BETA
+SHELL ["/bin/bash", "-e", "-u", "-o", "pipefail", "-c"]
 
-# Make our config and give it to the steam user
-USER root
+RUN export DEBIAN_FRONTEND=noninteractive; \
+    sed -ri 's/main/main contrib non-free/g' /etc/apt/sources.list; \
+    dpkg --add-architecture i386 ;\
+    apt-get update --assume-yes ;\
+    echo steam steam/question select "I AGREE" | debconf-set-selections; \
+    echo steam steam/license note '' | debconf-set-selections; \
+    apt-get install --assume-yes --no-install-recommends \
+      ca-certificates \
+      gosu \
+      lib32gcc1 \
+      locales \
+      steamcmd \
+      ;\
+    rm -rf /var/lib/apt/lists/*; \
+    ln -s /usr/games/steamcmd /usr/bin/steamcmd; \
+    groupadd steam; \
+    useradd -m -s /bin/false -g steam steam; \
+    locale-gen en_US.UTF-8
 
-# Install the scpsl server
-RUN mkdir -p /scpserver && \
-    steamcmd \
-        +login anonymous \
-        +force_install_dir /scpserver \
-        +app_update $APPID $STEAM_BETA validate \
-        +quit
 
-FROM mono AS runner
-
-ARG PORT=7777
-ARG UID=999
-ARG GID=999
-
-ENV CONFIG_LOC="/config"
-ENV INSTALL_LOC="/scpserver"
-ENV GAME_CONFIG_LOC="/home/scpsl/.config/SCP Secret Laboratory/config"
-
-USER root
-
-# Setup directory structure and permissions
-RUN groupadd -g $GID scpsl && \
-    useradd -m -s /bin/false -u $UID -g scpsl scpsl && \
-    mkdir -p "$GAME_CONFIG_LOC" $CONFIG_LOC $INSTALL_LOC && \
-    ln -s $CONFIG_LOC "$GAME_CONFIG_LOC/$PORT" && \
-    chown -R scpsl:scpsl $INSTALL_LOC $CONFIG_LOC /home/scpsl/.config
-COPY --chown=scpsl:scpsl --from=steambuild /scpserver $INSTALL_LOC
 COPY docker-entrypoint.sh /docker-entrypoint.sh
+COPY server-entrypoint.sh /server-entrypoint.sh
+RUN chmod u+x docker-entrypoint.sh server-entrypoint.sh
+
+# Unicode support
+ENV LANG 'en_US.UTF-8'
+ENV LANGUAGE 'en_US:en'
+# Settings
+ENV PORT=7777
+ENV CONFIG_PATH="/config"
+ENV INSTALL_PATH="/scp-server"
 
 # I/O
-VOLUME $CONFIG_LOC
 EXPOSE $PORT/udp
+# Configuration
+VOLUME $CONFIG_PATH
+# Cache installation
+VOLUME $INSTALL_PATH
+# Cache steamcmd
+VOLUME /home/steam/.steam/
 
 # Expose and run
-USER scpsl
-WORKDIR $INSTALL_LOC
-ENTRYPOINT /docker-entrypoint.sh
+WORKDIR $INSTALL_PATH
+CMD /docker-entrypoint.sh

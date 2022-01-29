@@ -1,4 +1,4 @@
 .dockerignore
+.travis.yml
 LICENSE
 README.md
-docker_deploy.sh
