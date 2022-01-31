@@ -13,7 +13,7 @@ GAME_CONFIG_PATH="/home/steam/.config/SCP Secret Laboratory/config"
 
 echo "Setup directory structure and permissions"
 mkdir -p "$GAME_CONFIG_PATH" "$CONFIG_PATH" "$INSTALL_PATH"
-ln -s "$CONFIG_PATH" "$GAME_CONFIG_PATH/$PORT"
+ln -sf "$CONFIG_PATH" "$GAME_CONFIG_PATH/$PORT"
 chown -R steam:steam "$INSTALL_PATH" "$CONFIG_PATH" /home/steam/
 
 gosu steam:steam /server-entrypoint.sh
