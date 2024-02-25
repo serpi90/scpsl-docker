@@ -1,9 +1,10 @@
-FROM mono:6
+# bookworm
+FROM debian:12-slim
 
 SHELL ["/bin/bash", "-e", "-u", "-o", "pipefail", "-c"]
 
 RUN export DEBIAN_FRONTEND=noninteractive; \
-    sed -ri 's/main/main contrib non-free/g' /etc/apt/sources.list; \
+    sed -ri 's/main/main contrib non-free/g' /etc/apt/sources.list.d/debian.sources; \
     dpkg --add-architecture i386 ;\
     apt-get update --assume-yes ;\
     echo steam steam/question select "I AGREE" | debconf-set-selections; \
@@ -11,8 +12,11 @@ RUN export DEBIAN_FRONTEND=noninteractive; \
     apt-get install --assume-yes --no-install-recommends \
       ca-certificates \
       gosu \
-      lib32gcc1 \
+      lib32gcc-s1 \
+      libcurl3-gnutls \
+      libicu72 \
       locales \
+      mono-runtime \
       steamcmd \
       ;\
     rm -rf /var/lib/apt/lists/*; \
